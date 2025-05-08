@@ -1,6 +1,12 @@
 local M = {}
 M.translations = {}
 
+local ok, yaml = pcall(require, "yaml")
+if not ok then
+  vim.notify("Please `luarocks install lua-yaml` for YAML parsing", vim.log.levels.ERROR)
+  return
+end
+
 --- Load all YAML translation files from a directory
 function M.load_translations(path)
   local files = vim.fn.globpath(path, "*.yml", false, true)
@@ -12,7 +18,7 @@ function M.load_translations(path)
     else
       local lines = vim.fn.readfile(file)
       local text = table.concat(lines, "\n")
-      local ok, tbl = pcall(vim.fn.yaml, text)
+      local ok, tbl = pcall(yaml.eval, text)
       if ok and type(tbl) == "table" then
         M.translations[lang] = tbl
       else
