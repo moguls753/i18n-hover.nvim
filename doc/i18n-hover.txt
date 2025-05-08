@@ -1,0 +1,19 @@
+-- doc/i18n-hover.txt
+" *i18n-hover.txt*
+
+= i18n-hover =
+
+Show translations of i18n keys on hover (`K`).
+
+* i18n-hover-usage *
+
+To configure in your init.lua:
+```lua
+require('i18n-hover').setup({
+  path = '/path/to/your/locales',
+  filetypes = { 'lua', 'js', 'ts' },
+})
+```
+
+Use `K` in any supported filetype to view all translations for the key under cursor.
+
