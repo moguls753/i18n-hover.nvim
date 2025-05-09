@@ -7,7 +7,7 @@ if not ok then
   return
 end
 
---- Load all YAML translation files from a directory
+-- maybe as a async Job (plenary)
 function M.load_translations(path)
   local files = vim.fn.globpath(path, "*.yml", false, true)
   for _, file in ipairs(files) do
@@ -18,11 +18,12 @@ function M.load_translations(path)
     else
       local lines = vim.fn.readfile(file)
       local text = table.concat(lines, "\n")
-      local ok, tbl = pcall(yaml.eval, text)
-      if ok and type(tbl) == "table" then
-        M.translations[lang] = tbl
+      local ok, tbl_or_err = pcall(yaml.eval, text)
+      if ok and type(tbl_or_err) == "table" then
+        M.translations[lang] = tbl_or_err
       else
-        vim.notify("Failed to parse translation file: " .. file, vim.log.levels.WARN)
+        -- store the error string (or the non-table result) directly
+        M.translations[lang] = tostring(tbl_or_err)
       end
     end
   end
