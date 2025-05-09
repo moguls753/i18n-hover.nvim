@@ -36,7 +36,6 @@ function M.load_translations(path)
 end
 
 local function lookup(tbl, key)
-  print(vim.inspect(tbl))
   for part in key:gmatch("([^.]+)") do
     if type(tbl) ~= "table" then
       return nil
