@@ -1,35 +1,42 @@
 local M = {}
 M.translations = {}
 
-local ok, yaml = pcall(require, "yaml")
-if not ok then
-  vim.notify("Please `luarocks install lua-yaml` for YAML parsing", vim.log.levels.ERROR)
-  return
+local function normalize_rails_yaml(lines)
+  -- 1) Quote any Ruby-symbol list items:   - :day  →  - ":day"
+  for i, line in ipairs(lines) do
+    lines[i] = line:gsub("^(%s*%-)%s*:(%w+)", '%1 "%2"', nil)
+  end
+
+  return lines
 end
 
--- maybe as a async Job (plenary)
 function M.load_translations(path)
-  local files = vim.fn.globpath(path, "*.yml", false, true)
-  for _, file in ipairs(files) do
-    local basename = file:match("([^/]+)%.yml$")
-    local lang = basename and basename:match("([^.]+)$")
-    if not lang then
-      vim.notify("Could not extract language from filename: " .. file, vim.log.levels.WARN)
+  local ok, yaml = pcall(require, "i18n-hover-yaml.yaml")
+  if not ok then
+    vim.notify("YAML parser failed to load", vim.log.levels.ERROR)
+    return
+  end
+
+  M.translations = {}
+
+  for _, file in ipairs(vim.fn.globpath(path, "*.yml", false, true)) do
+    local lines = vim.fn.readfile(file)
+    local text = table.concat(normalize_rails_yaml(lines), "\n")
+
+    local ok, data_or_err = pcall(yaml.eval, text)
+    if not ok or type(data_or_err) ~= "table" then
+      M.translations[file] = tostring(data_or_err)
     else
-      local lines = vim.fn.readfile(file)
-      local text = table.concat(lines, "\n")
-      local ok, tbl_or_err = pcall(yaml.eval, text)
-      if ok and type(tbl_or_err) == "table" then
-        M.translations[lang] = tbl_or_err
-      else
-        -- store the error string (or the non-table result) directly
-        M.translations[lang] = tostring(tbl_or_err)
+      for locale, mapping in pairs(data_or_err) do
+        local existing = M.translations[locale] or {}
+        M.translations[locale] = vim.tbl_deep_extend("force", existing, mapping)
       end
     end
   end
 end
 
 local function lookup(tbl, key)
+  print(vim.inspect(tbl))
   for part in key:gmatch("([^.]+)") do
     if type(tbl) ~= "table" then
       return nil
@@ -43,16 +50,20 @@ local function lookup(tbl, key)
 end
 
 function M.get_key_under_cursor()
-  -- fix: properly escaped pattern for t('foo.bar') or t("foo.bar")
+  -- pattern for t('foo.bar') or t("foo.bar")
   local pattern = "t%s*%([\"']([%w_.]+)[\"']%)"
   local line = vim.api.nvim_get_current_line()
   local col = vim.fn.col(".")
-  for _, dir in ipairs({ { start = 1, finish = col }, { start = col, finish = #line } }) do
-    local snippet = line:sub(dir.start, dir.finish)
-    local _, _, key = snippet:find(pattern)
-    if key then
+  local init = 1
+  while true do
+    local s, e, key = line:find(pattern, init)
+    if not s then
+      break
+    end
+    if col >= s and col <= e then
       return key
     end
+    init = e + 1
   end
   return nil
 end
@@ -79,7 +90,7 @@ function M.setup(opts)
   local path = opts.path or (vim.fn.getcwd() .. "/config/locales")
   M.load_translations(path)
 
-  local fts = opts.filetypes or { "lua", "js", "ts", "vue", "html", "rb", "erb", "slim" }
+  local fts = opts.filetypes or { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" }
   for _, ft in ipairs(fts) do
     vim.api.nvim_create_autocmd("FileType", {
       pattern = ft,
