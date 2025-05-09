@@ -17,15 +17,13 @@ function M.load_translations(path)
     return
   end
 
-  M.translations = {}
-
   for _, file in ipairs(vim.fn.globpath(path, "*.yml", false, true)) do
     local lines = vim.fn.readfile(file)
     local text = table.concat(normalize_rails_yaml(lines), "\n")
 
     local ok, data_or_err = pcall(yaml.eval, text)
     if not ok or type(data_or_err) ~= "table" then
-      M.translations[file] = tostring(data_or_err)
+      -- M.translations[file] = tostring(data_or_err)
     else
       for locale, mapping in pairs(data_or_err) do
         local existing = M.translations[locale] or {}
