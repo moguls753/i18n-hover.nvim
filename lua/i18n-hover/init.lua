@@ -1,49 +1,38 @@
 local M = {}
 M.translations = {}
 
-local function normalize_rails_yaml(lines)
-  -- 1) Quote any Ruby-symbol list items:   - :day  →  - ":day"
-  for i, line in ipairs(lines) do
-    lines[i] = line:gsub("^(%s*%-)%s*:(%w+)", '%1 "%2"', nil)
-  end
-
-  return lines
-end
-
 function M.load_translations(path)
-  local ok, yaml = pcall(require, "i18n-hover-yaml.yaml")
-  if not ok then
-    vim.notify("YAML parser failed to load", vim.log.levels.ERROR)
-    return
-  end
-
   for _, file in ipairs(vim.fn.globpath(path, "*.yml", false, true)) do
     local lines = vim.fn.readfile(file)
-    local text = table.concat(normalize_rails_yaml(lines), "\n")
 
-    local ok, data_or_err = pcall(yaml.eval, text)
-    if not ok or type(data_or_err) ~= "table" then
-      -- M.translations[file] = tostring(data_or_err)
-    else
-      for locale, mapping in pairs(data_or_err) do
-        local existing = M.translations[locale] or {}
-        M.translations[locale] = vim.tbl_deep_extend("force", existing, mapping)
+    local indents_seen = {}
+    for _, line in ipairs(lines) do
+      local indent = line:match("^(%s*).-:%s*")
+      if indent and #indent > 0 then
+        indents_seen[#indent] = true
+      end
+    end
+
+    local sizes = {}
+    for n in pairs(indents_seen) do
+      table.insert(sizes, n)
+    end
+    table.sort(sizes)
+    local indent_size = sizes[1] or 2
+
+    local result, key_path = {}, {}
+    for _, line in ipairs(lines) do
+      local indent, key, value = line:match("^(%s*)(.-)%s*:%s*(.*)$")
+      if key and key ~= "" then
+        local level = math.floor(#indent / indent_size)
+        key_path[level + 1] = key
+        for i = level + 2, #key_path do
+          key_path[i] = nil
+        end
+        result[table.concat(key_path, ".")] = value
       end
     end
   end
-end
-
-local function lookup(tbl, key)
-  for part in key:gmatch("([^.]+)") do
-    if type(tbl) ~= "table" then
-      return nil
-    end
-    tbl = tbl[part]
-    if tbl == nil then
-      return nil
-    end
-  end
-  return tbl
 end
 
 function M.get_key_under_cursor()
