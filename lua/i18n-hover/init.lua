@@ -34,8 +34,9 @@ local function flatten_lines(lines, language, indent_size)
     if key and key ~= "" then
       local level = math.floor(#indent / indent_size)
       key_path[level + 1] = key
-      for i = level + 2, #key_path do
-        key_path[i] = nil
+
+      while #key_path > level + 1 do
+        key_path[#key_path] = nil
       end
 
       if #value_space > 0 and value and value ~= "" then
