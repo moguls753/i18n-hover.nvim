@@ -30,7 +30,7 @@ local function flatten_lines(lines, language, indent_size)
   local key_path = {}
   local flattened_lines = {}
   for _, line in ipairs(lines) do
-    local indent, key, value_space, value = line:match("^(%s*)([^%s:]+):(%s*)(.*)$")
+    local indent, key, value_space, value = line:match("^(%s*)([%w']+):(%s*)(.*)$")
     if key and key ~= "" then
       local level = math.floor(#indent / indent_size)
       key_path[level + 1] = key
@@ -39,7 +39,6 @@ local function flatten_lines(lines, language, indent_size)
       end
 
       if #value_space > 0 and value and value ~= "" then
-        print(vim.inspect(key_path))
         local full = table.concat(key_path, ".")
         local subkey = full:match("^" .. language .. "%.(.+)$")
         if subkey then
@@ -54,7 +53,6 @@ end
 function M.load_translations()
   local cwd = vim.fn.getcwd()
   local files = vim.fn.globpath(cwd, "**/config/locales/*.yml", false, true)
-  print(vim.inspect(files))
 
   for _, file in ipairs(files) do
     local lines = vim.fn.readfile(file)
