@@ -50,8 +50,9 @@ local function flatten_lines(lines, language, indent_size)
   return flattened_lines
 end
 
-function M.load_translations(path)
-  for _, file in ipairs(vim.fn.globpath(path, "**/*.yml", false, true)) do
+function M.load_translations()
+  local files = vim.api.nvim_get_runtime_file("config/locales/*.yml", true)
+  for _, file in ipairs(files) do
     local lines = vim.fn.readfile(file)
     local indent_size = detect_indentation_width(lines)
     local language = detect_language(lines)
@@ -91,21 +92,22 @@ function M.show_hover()
     vim.notify("No i18n key found under cursor", vim.log.levels.INFO)
     return
   end
-  local lines = {}
+  local lines = { "" }
   for lang, tbl in pairs(M.translations) do
     local val = tbl[key]
     table.insert(lines, string.format("%s: %s", lang, val or "<missing>"))
+    table.insert(lines, "")
   end
   vim.lsp.util.open_floating_preview(lines, "plaintext", {
-    border = "single",
+    border = "rounded",
     max_width = 60,
+    title = "translations",
   })
 end
 
 function M.setup(opts)
   opts = opts or {}
-  local path = opts.path or (vim.fn.getcwd() .. "/config/locales")
-  M.load_translations(path)
+  M.load_translations()
 
   local fts = opts.filetypes or { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" }
   for _, ft in ipairs(fts) do
