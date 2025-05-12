@@ -34,12 +34,12 @@ local function flatten_lines(lines, language, indent_size)
     if key and key ~= "" then
       local level = math.floor(#indent / indent_size)
       key_path[level + 1] = key
-
-      while #key_path > level + 1 do
-        key_path[#key_path] = nil
+      for i = level + 2, #key_path do
+        key_path[i] = nil
       end
 
       if #value_space > 0 and value and value ~= "" then
+        print(vim.inspect(key_path))
         local full = table.concat(key_path, ".")
         local subkey = full:match("^" .. language .. "%.(.+)$")
         if subkey then
@@ -52,7 +52,10 @@ local function flatten_lines(lines, language, indent_size)
 end
 
 function M.load_translations()
-  local files = vim.api.nvim_get_runtime_file("config/locales/*.yml", true)
+  local cwd = vim.fn.getcwd()
+  local files = vim.fn.globpath(cwd, "**/config/locales/*.yml", false, true)
+  print(vim.inspect(files))
+
   for _, file in ipairs(files) do
     local lines = vim.fn.readfile(file)
     local indent_size = detect_indentation_width(lines)
