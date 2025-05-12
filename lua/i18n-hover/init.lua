@@ -1,36 +1,67 @@
 local M = {}
 M.translations = {}
 
-function M.load_translations(path)
-  for _, file in ipairs(vim.fn.globpath(path, "*.yml", false, true)) do
-    local lines = vim.fn.readfile(file)
+local function detect_indentation_width(lines)
+  local indents_seen = {}
+  local sizes = {}
+  for _, line in ipairs(lines) do
+    local indent = line:match("^(%s*).-:%s*")
+    if indent and #indent > 0 then
+      indents_seen[#indent] = true
+    end
+  end
+  for n in pairs(indents_seen) do
+    table.insert(sizes, n)
+  end
+  table.sort(sizes)
+  return sizes[1] or 2
+end
 
-    local indents_seen = {}
-    for _, line in ipairs(lines) do
-      local indent = line:match("^(%s*).-:%s*")
-      if indent and #indent > 0 then
-        indents_seen[#indent] = true
+local function detect_language(lines)
+  for _, line in ipairs(lines) do
+    local indent, key = line:match("^(%s*)([%w_%-]+)%s*:%s*")
+    if indent and #indent == 0 and key then
+      return key
+    end
+  end
+end
+
+local function flatten_lines(lines, language, indent_size)
+  local key_path = {}
+  local flattened_lines = {}
+  for _, line in ipairs(lines) do
+    local indent, key, value_space, value = line:match("^(%s*)([^%s:]+):(%s*)(.*)$")
+    if key and key ~= "" then
+      local level = math.floor(#indent / indent_size)
+      key_path[level + 1] = key
+      for i = level + 2, #key_path do
+        key_path[i] = nil
       end
-    end
 
-    local sizes = {}
-    for n in pairs(indents_seen) do
-      table.insert(sizes, n)
-    end
-    table.sort(sizes)
-    local indent_size = sizes[1] or 2
-
-    local result, key_path = {}, {}
-    for _, line in ipairs(lines) do
-      local indent, key, value = line:match("^(%s*)(.-)%s*:%s*(.*)$")
-      if key and key ~= "" then
-        local level = math.floor(#indent / indent_size)
-        key_path[level + 1] = key
-        for i = level + 2, #key_path do
-          key_path[i] = nil
+      if #value_space > 0 and value and value ~= "" then
+        local full = table.concat(key_path, ".")
+        local subkey = full:match("^" .. language .. "%.(.+)$")
+        if subkey then
+          flattened_lines[subkey] = value
         end
-        result[table.concat(key_path, ".")] = value
       end
+    end
+  end
+  return flattened_lines
+end
+
+function M.load_translations(path)
+  for _, file in ipairs(vim.fn.globpath(path, "**/*.yml", false, true)) do
+    local lines = vim.fn.readfile(file)
+    local indent_size = detect_indentation_width(lines)
+    local language = detect_language(lines)
+
+    M.translations[language] = M.translations[language] or {}
+
+    local flat_lines = flatten_lines(lines, language, indent_size)
+
+    for key, value in pairs(flat_lines) do
+      M.translations[language][key] = value
     end
   end
 end
@@ -62,7 +93,7 @@ function M.show_hover()
   end
   local lines = {}
   for lang, tbl in pairs(M.translations) do
-    local val = lookup(tbl, key)
+    local val = tbl[key]
     table.insert(lines, string.format("%s: %s", lang, val or "<missing>"))
   end
   vim.lsp.util.open_floating_preview(lines, "plaintext", {
