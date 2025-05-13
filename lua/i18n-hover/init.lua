@@ -55,8 +55,11 @@ local function flatten_lines(lines, language, indent_size)
         current_subkey = subkey
       end
     elseif in_literal_block then
-      if indent_level >= literal_block_indent then
-        local stripped_line = line:sub(literal_block_indent + 1) -- remove block indent
+      if indent_level >= literal_block_indent or line:match("^%s*$") then
+        -- Still in block (even if empty line)
+        local stripped_line = indent_level >= literal_block_indent
+            and line:sub(literal_block_indent + 1)
+          or ""
         table.insert(block_lines, stripped_line)
         goto continue
       else
