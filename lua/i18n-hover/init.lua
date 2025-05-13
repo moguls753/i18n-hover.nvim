@@ -29,12 +29,51 @@ end
 local function flatten_lines(lines, language, indent_size)
   local key_path = {}
   local flattened_lines = {}
+  local in_literal_block = false
+  local literal_block_indent = 0
+  local current_subkey = nil
+  local block_lines = {}
+  local indent_level = 0
+
   for _, line in ipairs(lines) do
-    local indent, key, value_space, value = line:match("^(%s*)([%w']+):(%s*)(.*)$")
+    local indent, key, value_space, block_sign, value = line:match("^(%s*)(.-):(%s*)([|>]?)(.*)$")
+
+    if indent then
+      indent_level = math.floor(#indent / indent_size)
+    end
+
+    -- Literal block logic
+    if block_sign and block_sign ~= "" then
+      in_literal_block = true
+      literal_block_indent = indent_level + indent_size
+      block_lines = {}
+
+      -- Store subkey for block attachment
+      local full = table.concat(key_path, ".")
+      local subkey = full:match("^" .. language .. "%.(.+)$")
+      if subkey then
+        current_subkey = subkey
+      end
+    elseif in_literal_block then
+      if indent_level >= literal_block_indent then
+        local stripped_line = line:sub(literal_block_indent + 1) -- remove block indent
+        table.insert(block_lines, stripped_line)
+        goto continue
+      else
+        -- End of block: save and reset
+        if current_subkey then
+          flattened_lines[current_subkey] = table.concat(block_lines, "\n")
+        end
+        in_literal_block = false
+        current_subkey = nil
+        block_lines = {}
+      end
+    end
+
+    -- Regular key/value parsing
     if key and key ~= "" then
-      local level = math.floor(#indent / indent_size)
-      key_path[level + 1] = key
-      for i = level + 2, #key_path do
+      key_path[indent_level + 1] = key
+      for i = indent_level + 2, #key_path do
         key_path[i] = nil
       end
 
@@ -46,7 +85,15 @@ local function flatten_lines(lines, language, indent_size)
         end
       end
     end
+
+    ::continue::
   end
+
+  -- Final block check (in case file ends inside a block)
+  if in_literal_block and current_subkey then
+    flattened_lines[current_subkey] = table.concat(block_lines, "\n")
+  end
+
   return flattened_lines
 end
 
