@@ -45,7 +45,7 @@ local function flatten_lines(lines, language, indent_size)
     -- Literal block logic
     if block_sign and block_sign ~= "" then
       in_literal_block = true
-      literal_block_indent = indent_level + indent_size
+      literal_block_indent = indent_level + 1
       block_lines = {}
 
       -- Store subkey for block attachment
@@ -55,6 +55,9 @@ local function flatten_lines(lines, language, indent_size)
         current_subkey = subkey
       end
     elseif in_literal_block then
+      indent = line:match("^(%s*)") or ""
+      indent_level = math.floor(#indent / indent_size)
+
       if indent_level >= literal_block_indent or line:match("^%s*$") then
         -- Still in block (even if empty line)
         local stripped_line = indent_level >= literal_block_indent
