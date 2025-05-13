@@ -48,6 +48,8 @@ function M.show_hover()
 end
 
 function M.setup(opts)
+  opts = opts or {}
+
   nio.run(function()
     local cwd = fn.getcwd()
 
