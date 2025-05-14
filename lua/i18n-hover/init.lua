@@ -1,7 +1,6 @@
 local nio = require("nio")
 local process = nio.process
 
--- Detect your plugin root dynamically
 local current_script_path = debug.getinfo(1, "S").source:sub(2)
 local root_path = current_script_path:gsub("/[^/]+/[^/]+/[^/]+$", "")
 local script = root_path .. "/scripts/flatten_locales.rb"
@@ -9,7 +8,6 @@ local script = root_path .. "/scripts/flatten_locales.rb"
 local M = {}
 
 function M.get_key_under_cursor()
-  -- pattern for t('foo.bar') or t("foo.bar")
   local pattern = "t%s*%([\"']([%w_.]+)[\"']%)"
   local line = vim.api.nvim_get_current_line()
   local col = vim.fn.col(".")

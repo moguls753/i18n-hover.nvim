@@ -2,7 +2,6 @@
 
 require 'yaml'
 require 'json'
-require 'pry'
 
 base = ARGV.fetch(0) { abort "usage: flatten_locales.rb /path/to/project" }
 
