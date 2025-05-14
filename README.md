@@ -23,12 +23,12 @@ A Neovim plugin to instantly hover and browse Rails I18n translations under your
 ```lua
 require("lazy").setup({
   {
-    'moguls753/rails-i18n-hover.nvim',
+    "moguls753/rails-i18n-hover.nvim",
     config = function()
-      require('rails-i18n-hover').setup()
+      require("rails-i18n-hover").setup()
     end,
     dependencies = {
-      'nvim-neotest/nvim-nio',
+      "nvim-neotest/nvim-nio",
     },
   },
 })
@@ -40,19 +40,23 @@ require("lazy").setup({
 
 - Move your cursor over an I18n lookup, for example:
 
-    t("welcome.title")
+```ruby
+`I18n.t("welcome.title")`
+```
 
 - Press your hover keymap (`<leader>ih` by default) to see all translations in a floating window.
 
-Press `gf` on the same key to jump to the corresponding YAML file (defaults to German `"de"` entries).
+Press `gf` on the same key to jump to the corresponding YAML file (defaults to english `"en"` files).
 
 ## Configuration
 
 Call `setup()` with your own options:
+
 ```lua
 require("rails-i18n-hover").setup({
     keymap    = "<leader>tt",               -- change the hover keybinding
     filetypes = { "rb", "eruby", "js" },    -- limit to specific filetypes
+    goto      = "de"
 })
 ```
 

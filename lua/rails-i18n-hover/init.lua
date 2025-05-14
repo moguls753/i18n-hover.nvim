@@ -21,6 +21,7 @@ function M.setup(opts)
   opts = vim.tbl_deep_extend("force", {
     keymap = "<leader>ih",
     filetypes = { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" },
+    goto_lang = "en",
   }, opts or {})
 
   for _, ft in ipairs(opts.filetypes) do
@@ -35,7 +36,7 @@ function M.setup(opts)
           M.show_hover,
           { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
         )
-        vim.keymap.set("n", "gf", M.goto_yaml_file, {
+        vim.keymap.set("n", "gf", M.goto_yaml_file(opts.goto_lang), {
           noremap = true,
           silent = true,
           desc = "Jump to i18n YAML file",
@@ -90,7 +91,7 @@ function M.show_hover()
   })
 end
 
-function M.goto_yaml_file()
+function M.goto_yaml_file(language)
   local key = M.get_key_under_cursor()
   if not key then
     -- default gf mapping
@@ -98,7 +99,6 @@ function M.goto_yaml_file()
     return
   end
 
-  local language = "de"
   if M.translations[language] and M.translations[language][key] then
     local file_path = M.translations[language][key].file
     if file_path and vim.loop.fs_stat(file_path) then
