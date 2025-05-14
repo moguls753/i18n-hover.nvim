@@ -45,7 +45,14 @@ function M.show_hover()
 end
 
 function M.setup(opts)
-  opts = opts or {}
+  if vim.fn.filereadable(vim.fn.getcwd() .. "/Gemfile") == 0 then
+    return
+  end
+
+  opts = vim.tbl_deep_extend("force", {
+    keymap = "<leader>ih",
+    filetypes = { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" },
+  }, opts or {})
 
   nio.run(function()
     local cwd = vim.fn.getcwd()
@@ -81,12 +88,16 @@ function M.setup(opts)
     M.translations = tbl
   end)
 
-  local fts = opts.filetypes or { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" }
-  for _, ft in ipairs(fts) do
+  for _, ft in ipairs(opts.filetypes) do
     vim.api.nvim_create_autocmd("FileType", {
       pattern = ft,
       callback = function()
-        vim.keymap.set("n", "K", M.show_hover, { buffer = true, silent = true })
+        vim.keymap.set(
+          "n",
+          opts.keymap,
+          M.show_hover,
+          { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
+        )
       end,
     })
   end
