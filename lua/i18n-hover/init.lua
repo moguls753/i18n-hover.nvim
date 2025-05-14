@@ -1,6 +1,9 @@
 local nio = require("nio")
 local process = nio.process
 
+local spinner_frames = { "◐", "◓", "◑", "◒" }
+local ns = vim.api.nvim_create_namespace("flatten_locales_spinner")
+
 local current_script_path = debug.getinfo(1, "S").source:sub(2)
 local root_path = current_script_path:gsub("/[^/]+/[^/]+/[^/]+$", "")
 local script = root_path .. "/scripts/flatten_locales.rb"
@@ -48,6 +51,60 @@ function M.setup(opts)
   if vim.fn.filereadable(vim.fn.getcwd() .. "/Gemfile") == 0 then
     return
   end
+  vim.api.nvim_set_hl(0, "YamlProgressTitle", { link = "Comment" })
+  vim.api.nvim_set_hl(0, "YamlProgressSpinner", { link = "Identifier" })
+
+  -- create an unlisted scratch buffer and floating win for spinner
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win
+
+  -- start the spinner timer
+  local running = true
+  local idx = 1
+  -- spinner timer: update every 100ms
+  local timer = vim.loop.new_timer()
+  timer:start(
+    0,
+    100,
+    vim.schedule_wrap(function()
+      if not running then
+        timer:stop()
+        return
+      end
+
+      -- open float on first tick
+      if not win or not vim.api.nvim_win_is_valid(win) then
+        local prefix = "Parsing Yaml Files for translations: "
+        local w = #prefix + 1
+        win = vim.api.nvim_open_win(buf, false, {
+          relative = "editor",
+          anchor = "SE",
+          row = vim.o.lines - 2,
+          col = vim.o.columns,
+          width = w,
+          height = 1,
+          style = "minimal",
+          focusable = false,
+          noautocmd = true,
+          zindex = 50,
+        })
+        vim.api.nvim_win_set_option(win, "winblend", 10)
+      end
+
+      -- build and write the line
+      local prefix = "Parsing Yaml Files for translations: "
+      local spin = spinner_frames[idx]
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prefix .. spin })
+
+      -- clear old highlights…
+      vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+      -- …then highlight prefix and spinner
+      vim.api.nvim_buf_add_highlight(buf, ns, "YamlProgressTitle", 0, 0, #prefix)
+      vim.api.nvim_buf_add_highlight(buf, ns, "YamlProgressSpinner", 0, #prefix, #prefix + 1)
+
+      idx = idx % #spinner_frames + 1
+    end)
+  )
 
   opts = vim.tbl_deep_extend("force", {
     keymap = "<leader>ih",
@@ -64,6 +121,17 @@ function M.setup(opts)
 
     local output = job.stdout.read()
     local exit_code, stderr_lines = job:result(true)
+
+    -- stop the spinner and close the float
+    running = false
+    -- stop the timer right away
+    timer:stop()
+    -- close the window on the main loop
+    vim.schedule(function()
+      if win and vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_close(win, true)
+      end
+    end)
 
     if exit_code ~= 0 then
       vim.schedule(function()
