@@ -41,7 +41,7 @@ require("lazy").setup({
 - Move your cursor over an I18n lookup, for example:
 
 ```ruby
-`I18n.t("welcome.title")`
+I18n.t("welcome.title")
 ```
 
 - Press your hover keymap (`<leader>ih` by default) to see all translations in a floating window.
@@ -56,12 +56,13 @@ Call `setup()` with your own options:
 require("rails-i18n-hover").setup({
     keymap    = "<leader>tt",               -- change the hover keybinding
     filetypes = { "rb", "eruby", "js" },    -- limit to specific filetypes
-    goto      = "de"
+    goto_lang     = "de"
 })
 ```
 
-| Option     | Default                                                                                     | Description                                                  |
-| ---------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `keymap`   | `"<leader>ih"`                                                                              | Normal‐mode key to show hover translations                   |
+| Option     | Default                                                                                      | Description                                                  |
+| ---------- | -------------------------------------------------------------------------------------------  | ------------------------------------------------------------ |
+| `keymap`   | `"<leader>ih"`                                                                               | Normal‐mode key to show hover translations                   |
 | `filetypes`| `{ "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" }`                                | Filetypes on which to enable the keymaps                     |
+| `goto_lang`| `"en"`                                                                                       | language yaml file for `gf` (e.g. en.yml)                    |
 
