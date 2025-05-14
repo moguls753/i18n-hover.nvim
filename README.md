@@ -2,7 +2,8 @@
 
 A Neovim plugin to instantly hover and browse Rails I18n translations under your cursor. It parses your `**/config/locales/*.yml` files and shows translations in a floating window.
 
-![image](https://github.com/user-attachments/assets/8677cd84-4b19-4661-a454-ed97374e082f)
+![image](https://github.com/user-attachments/assets/a9e4193a-7409-4f1f-927e-626292ff12b2)
+
 
 
 ## Features
