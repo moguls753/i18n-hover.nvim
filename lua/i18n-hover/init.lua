@@ -1,6 +1,5 @@
 local nio = require("nio")
 local process = nio.process
-local fn = vim.fn
 
 -- Detect your plugin root dynamically
 local current_script_path = debug.getinfo(1, "S").source:sub(2)
@@ -51,7 +50,7 @@ function M.setup(opts)
   opts = opts or {}
 
   nio.run(function()
-    local cwd = fn.getcwd()
+    local cwd = vim.fn.getcwd()
 
     local job = process.run({
       cmd = "bundle",
