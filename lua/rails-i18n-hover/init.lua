@@ -28,15 +28,15 @@ function M.setup(opts)
     vim.api.nvim_create_autocmd("FileType", {
       pattern = ft,
       callback = function()
-        -- vim.keymap.set("n", "gf", "<Nop>", { buffer = true })
-
         vim.keymap.set(
           "n",
           opts.keymap,
           M.show_hover,
           { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
         )
-        vim.keymap.set("n", "gf", M.goto_yaml_file(opts.goto_lang), {
+        vim.keymap.set("n", "gf", function()
+          M.goto_yaml_file(opts.goto_lang)
+        end, {
           noremap = true,
           silent = true,
           desc = "Jump to i18n YAML file",
@@ -107,6 +107,7 @@ function M.goto_yaml_file(language)
       vim.notify("Translation file not found: " .. (file_path or key), vim.log.levels.ERROR)
     end
   end
+  vim.notify("Translation file not found!")
 end
 
 function M.start_progress_spinner()
