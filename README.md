@@ -49,11 +49,12 @@ Press `gf` on the same key to jump to the corresponding YAML file (defaults to G
 ## Configuration
 
 Call `setup()` with your own options:
-
-    require("rails-i18n-hover").setup({
-      keymap    = "<leader>tt",               -- change the hover keybinding
-      filetypes = { "rb", "eruby", "js" },    -- limit to specific filetypes
-    })
+```lua
+require("rails-i18n-hover").setup({
+    keymap    = "<leader>tt",               -- change the hover keybinding
+    filetypes = { "rb", "eruby", "js" },    -- limit to specific filetypes
+})
+```
 
 | Option     | Default                                                                                     | Description                                                  |
 | ---------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
