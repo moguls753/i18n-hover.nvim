@@ -36,7 +36,7 @@ function M.show_hover()
   end
   local lines = { "" }
   for lang, tbl in pairs(M.translations) do
-    local val = tbl[key]
+    local val = tbl[key] and tbl[key].translation
     table.insert(lines, string.format("%s: %s", lang, val or "<missing>"))
     table.insert(lines, "")
   end
@@ -45,6 +45,25 @@ function M.show_hover()
     max_width = 60,
     title = "translations",
   })
+end
+
+function M.goto_yaml_file()
+  local key = M.get_key_under_cursor()
+  if not key then
+    -- default gf mapping
+    vim.cmd("normal! gf")
+    return
+  end
+
+  local language = "de"
+  if M.translations[language] and M.translations[language][key] then
+    local file_path = M.translations[language][key].file
+    if file_path and vim.loop.fs_stat(file_path) then
+      vim.cmd("edit " .. vim.fn.fnameescape(file_path))
+    else
+      vim.notify("Translation file not found: " .. (file_path or key), vim.log.levels.ERROR)
+    end
+  end
 end
 
 function M.setup(opts)
@@ -160,12 +179,20 @@ function M.setup(opts)
     vim.api.nvim_create_autocmd("FileType", {
       pattern = ft,
       callback = function()
+        -- vim.keymap.set("n", "gf", "<Nop>", { buffer = true })
+
         vim.keymap.set(
           "n",
           opts.keymap,
           M.show_hover,
           { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
         )
+        vim.keymap.set("n", "gf", M.goto_yaml_file, {
+          noremap = true,
+          silent = true,
+          desc = "Jump to i18n YAML file",
+          buffer = true,
+        })
       end,
     })
   end
