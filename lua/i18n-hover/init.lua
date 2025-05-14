@@ -1,14 +1,57 @@
 local nio = require("nio")
-local process = nio.process
 
+local M = {}
+
+M._spinner = {
+  buf = nil,
+  win = nil,
+  timer = nil,
+  running = false,
+  idx = 1,
+}
+
+function M.setup(opts)
+  if vim.fn.filereadable(vim.fn.getcwd() .. "/Gemfile") == 0 then
+    return
+  end
+
+  M.start_progress_spinner()
+  M.start_parsing()
+
+  opts = vim.tbl_deep_extend("force", {
+    keymap = "<leader>ih",
+    filetypes = { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" },
+  }, opts or {})
+
+  for _, ft in ipairs(opts.filetypes) do
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = ft,
+      callback = function()
+        -- vim.keymap.set("n", "gf", "<Nop>", { buffer = true })
+
+        vim.keymap.set(
+          "n",
+          opts.keymap,
+          M.show_hover,
+          { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
+        )
+        vim.keymap.set("n", "gf", M.goto_yaml_file, {
+          noremap = true,
+          silent = true,
+          desc = "Jump to i18n YAML file",
+          buffer = true,
+        })
+      end,
+    })
+  end
+end
+
+local process = nio.process
 local spinner_frames = { "◐", "◓", "◑", "◒" }
 local ns = vim.api.nvim_create_namespace("flatten_locales_spinner")
-
 local current_script_path = debug.getinfo(1, "S").source:sub(2)
 local root_path = current_script_path:gsub("/[^/]+/[^/]+/[^/]+$", "")
 local script = root_path .. "/scripts/flatten_locales.rb"
-
-local M = {}
 
 function M.get_key_under_cursor()
   local pattern = "t%s*%([\"']([%w_.]+)[\"']%)"
@@ -66,36 +109,28 @@ function M.goto_yaml_file()
   end
 end
 
-function M.setup(opts)
-  if vim.fn.filereadable(vim.fn.getcwd() .. "/Gemfile") == 0 then
-    return
-  end
+function M.start_progress_spinner()
+  local s = M._spinner
+  s.running = true
+  s.idx = 1
+  s.buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_hl(0, "YamlProgressTitle", { link = "Comment" })
   vim.api.nvim_set_hl(0, "YamlProgressSpinner", { link = "Identifier" })
 
-  -- create an unlisted scratch buffer and floating win for spinner
-  local buf = vim.api.nvim_create_buf(false, true)
-  local win
-
-  -- start the spinner timer
-  local running = true
-  local idx = 1
-  -- spinner timer: update every 100ms
-  local timer = vim.loop.new_timer()
-  timer:start(
+  s.timer = vim.loop.new_timer()
+  s.timer:start(
     0,
     100,
     vim.schedule_wrap(function()
-      if not running then
-        timer:stop()
+      if not s.running then
+        s.timer:stop()
         return
       end
 
-      -- open float on first tick
-      if not win or not vim.api.nvim_win_is_valid(win) then
+      if not s.win or not vim.api.nvim_win_is_valid(s.win) then
         local prefix = "Parsing Yaml Files for translations: "
         local w = #prefix + 1
-        win = vim.api.nvim_open_win(buf, false, {
+        s.win = vim.api.nvim_open_win(s.buf, false, {
           relative = "editor",
           anchor = "SE",
           row = vim.o.lines - 2,
@@ -107,29 +142,35 @@ function M.setup(opts)
           noautocmd = true,
           zindex = 50,
         })
-        vim.api.nvim_win_set_option(win, "winblend", 10)
+        vim.api.nvim_win_set_option(s.win, "winblend", 10)
       end
 
-      -- build and write the line
       local prefix = "Parsing Yaml Files for translations: "
-      local spin = spinner_frames[idx]
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prefix .. spin })
+      local spin = spinner_frames[s.idx]
+      vim.api.nvim_buf_set_lines(s.buf, 0, -1, false, { prefix .. spin })
+      vim.api.nvim_buf_clear_namespace(s.buf, ns, 0, -1)
+      vim.api.nvim_buf_add_highlight(s.buf, ns, "YamlProgressTitle", 0, 0, #prefix)
+      vim.api.nvim_buf_add_highlight(s.buf, ns, "YamlProgressSpinner", 0, #prefix, #prefix + 1)
 
-      -- clear old highlights…
-      vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-      -- …then highlight prefix and spinner
-      vim.api.nvim_buf_add_highlight(buf, ns, "YamlProgressTitle", 0, 0, #prefix)
-      vim.api.nvim_buf_add_highlight(buf, ns, "YamlProgressSpinner", 0, #prefix, #prefix + 1)
-
-      idx = idx % #spinner_frames + 1
+      s.idx = s.idx % #spinner_frames + 1
     end)
   )
+end
 
-  opts = vim.tbl_deep_extend("force", {
-    keymap = "<leader>ih",
-    filetypes = { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" },
-  }, opts or {})
+function M.stop_progress_spinner()
+  local s = M._spinner
+  s.running = false
+  if s.timer then
+    s.timer:stop()
+  end
+  vim.schedule(function()
+    if s.win and vim.api.nvim_win_is_valid(s.win) then
+      vim.api.nvim_win_close(s.win, true)
+    end
+  end)
+end
 
+function M.start_parsing()
   nio.run(function()
     local cwd = vim.fn.getcwd()
 
@@ -141,16 +182,7 @@ function M.setup(opts)
     local output = job.stdout.read()
     local exit_code, stderr_lines = job:result(true)
 
-    -- stop the spinner and close the float
-    running = false
-    -- stop the timer right away
-    timer:stop()
-    -- close the window on the main loop
-    vim.schedule(function()
-      if win and vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_win_close(win, true)
-      end
-    end)
+    M.stop_progress_spinner()
 
     if exit_code ~= 0 then
       vim.schedule(function()
@@ -174,28 +206,6 @@ function M.setup(opts)
 
     M.translations = tbl
   end)
-
-  for _, ft in ipairs(opts.filetypes) do
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = ft,
-      callback = function()
-        -- vim.keymap.set("n", "gf", "<Nop>", { buffer = true })
-
-        vim.keymap.set(
-          "n",
-          opts.keymap,
-          M.show_hover,
-          { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
-        )
-        vim.keymap.set("n", "gf", M.goto_yaml_file, {
-          noremap = true,
-          silent = true,
-          desc = "Jump to i18n YAML file",
-          buffer = true,
-        })
-      end,
-    })
-  end
 end
 
 return M
