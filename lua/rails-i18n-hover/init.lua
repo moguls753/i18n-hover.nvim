@@ -55,7 +55,7 @@ local root_path = current_script_path:gsub("/[^/]+/[^/]+/[^/]+$", "")
 local script = root_path .. "/scripts/flatten_locales.rb"
 
 function M.get_key_under_cursor()
-  local pattern = "t%s*%([\"']([%w_.]+)[\"']%)"
+  local pattern = "t%s*%(%s*['\"]([%w_.]+)['\"]"
   local line = vim.api.nvim_get_current_line()
   local col = vim.fn.col(".")
   local init = 1
