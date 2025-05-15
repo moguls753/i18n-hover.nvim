@@ -61,6 +61,7 @@ require("rails-i18n-hover").setup({
     keymap    = "<leader>tt",               -- change the hover keybinding
     filetypes = { "rb", "eruby", "js" },    -- limit to specific filetypes
     goto_lang     = "de"
+    goto_file_keymap     = "gt"             -- if default gf disturbs other plugins
 })
 ```
 
@@ -69,4 +70,5 @@ require("rails-i18n-hover").setup({
 | `keymap`   | `"<leader>ih"`                                                                               | Normal‐mode key to show hover translations                   |
 | `filetypes`| `{ "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" }`                                | Filetypes on which to enable the keymaps                     |
 | `goto_lang`| `"en"`                                                                                       | language yaml file for `gf` (e.g. en.yml)                    |
+| `goto_file_keymap`| `"gf"`                                                                                       | keymap for opening the yaml file which contains the key under cursor                    |
 
