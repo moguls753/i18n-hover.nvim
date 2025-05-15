@@ -22,6 +22,7 @@ function M.setup(opts)
     keymap = "<leader>ih",
     filetypes = { "lua", "js", "ts", "vue", "html", "ruby", "eruby", "slim" },
     goto_lang = "en",
+    goto_file_keymap = "gf",
   }, opts or {})
 
   for _, ft in ipairs(opts.filetypes) do
@@ -34,7 +35,7 @@ function M.setup(opts)
           M.show_hover,
           { buffer = true, silent = true, desc = "Show i18n translations under cursor" }
         )
-        vim.keymap.set("n", "gf", function()
+        vim.keymap.set("n", opts.goto_file_keymap, function()
           M.goto_yaml_file(opts.goto_lang)
         end, {
           noremap = true,
