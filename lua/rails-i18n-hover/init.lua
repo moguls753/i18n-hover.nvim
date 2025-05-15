@@ -20,7 +20,7 @@ function M.setup(opts)
 
   opts = vim.tbl_deep_extend("force", {
     keymap = "<leader>ih",
-    filetypes = { "lua", "js", "ts", "vue", "html", "rb", "eruby", "slim" },
+    filetypes = { "lua", "js", "ts", "vue", "html", "ruby", "eruby", "slim" },
     goto_lang = "en",
   }, opts or {})
 
