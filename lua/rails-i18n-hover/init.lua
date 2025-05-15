@@ -176,8 +176,8 @@ function M.start_parsing()
     local cwd = vim.fn.getcwd()
 
     local job = process.run({
-      cmd = "bundle",
-      args = { "exec", "ruby", script, cwd },
+      cmd = "ruby",
+      args = { script, cwd },
     })
 
     local output = job.stdout.read()
