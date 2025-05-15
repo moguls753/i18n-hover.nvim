@@ -104,11 +104,22 @@ function M.goto_yaml_file(language)
     local file_path = M.translations[language][key].file
     if file_path and vim.loop.fs_stat(file_path) then
       vim.cmd("edit " .. vim.fn.fnameescape(file_path))
+      local parts = vim.split(key, "%.")
+      local indent = 0
+
+      for _, part in ipairs(parts) do
+        local pattern = vim.pesc(part)
+        local found = vim.fn.search(pattern, "W") -- "W" search always downwards
+        if found == 0 then
+          break
+        end
+      end
     else
       vim.notify("Translation file not found: " .. (file_path or key), vim.log.levels.ERROR)
     end
+  else
+    vim.notify("Translation file not found!")
   end
-  vim.notify("Translation file not found!")
 end
 
 function M.start_progress_spinner()
