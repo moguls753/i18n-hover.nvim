@@ -104,7 +104,7 @@ function M.goto_yaml_file(language)
     local file_path = M.translations[language][key].file
     if file_path and vim.loop.fs_stat(file_path) then
       vim.cmd("edit " .. vim.fn.fnameescape(file_path))
-      vim.cmd("normal! gg")
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
       local parts = vim.split(key, "%.")
 
       for _, part in ipairs(parts) do
