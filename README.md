@@ -17,7 +17,7 @@ A Neovim plugin to instantly hover and browse Rails I18n translations under your
 
 - Neovim v0.7+  
 - 'nvim-neotest/nvim-nio' plugin for async parsing 
-- Ruby & Bundler (plugin invokes: `bundle exec ruby scripts/flatten_locales.rb <project_root>`)  
+- Ruby 1.8+ (plugin invokes: `ruby scripts/flatten_locales.rb <project_root>`)  
 - A `Gemfile` at your project root (otherwise the plugin will not load)
 
 ## Installation
